@@ -1,0 +1,4 @@
+---
+file:
+  /app/nzbget/bin/nzbget:
+    exists: true
