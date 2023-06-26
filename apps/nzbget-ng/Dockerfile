@@ -53,7 +53,9 @@ RUN	echo "**** install build packages ****" \
 	&& ln -s /usr/bin/7za /app/nzbget/7za \
 	&& ln -s /usr/bin/unrar /app/nzbget/unrar \
 	&& cp /nzbget/pubkey.pem /app/nzbget/pubkey.pem \
-	&& curl -o /app/nzbget/cacert.pem -L "https://curl.se/ca/cacert.pem"
+	&& curl -o /app/nzbget/cacert.pem -L "https://curl.se/ca/cacert.pem" \
+	&& chown -R kah:kah /app/nzbget \
+	&& chmod -R 755 /app/nzbget
 
 FROM ghcr.io/onedr0p/alpine:3.18.2
 ARG	BUILD_DATE
