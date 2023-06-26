@@ -7,7 +7,6 @@ ARG CHANNEL
 ENV \
     NZBGET__BRANCH="${CHANNEL}" \
     NZBGET__PORT="6789" \
-    NZBGET__MAIN_DIR="/downloads"
 
 RUN	echo "**** install build packages ****" \
     && case "${TARGETPLATFORM}" in \
@@ -33,7 +32,6 @@ RUN	echo "**** install build packages ****" \
 	&& cd nzbget \
 	&& make \
 	&& make prefix=/app/nzbget install \
-	&& mkdir -p ${NZBGET__MAIN_DIR} \
 	&& sed -i \
     -e "s#^MainDir=.*#MainDir=${NZBGET__MAIN_DIR}#g" \
     -e "s#^ScriptDir=.*#ScriptDir=$\{MainDir\}/scripts#g" \
@@ -59,9 +57,13 @@ RUN	echo "**** install build packages ****" \
 FROM ghcr.io/onedr0p/alpine:3.18.2
 ARG	BUILD_DATE
 ARG	VERSION
+
+ENV NZBGET__MAIN_DIR="/downloads"
+
 LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="thelamer"
 RUN	echo "**** install packages ****" \
+	&& mkdir -p ${NZBGET__MAIN_DIR} \
 	&& apk add --no-cache \
 	libxml2 \
 	libxslt \
