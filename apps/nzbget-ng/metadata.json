@@ -5,12 +5,11 @@
     {
       "name": "develop",
       "platforms": [
-        "linux/amd64",
-        "linux/arm64"
+        "linux/amd64"
       ],
-      "stable": false,
+      "stable": true,
       "tests": {
-        "enabled": false,
+        "enabled": true,
         "type": "web"
       }
     }
