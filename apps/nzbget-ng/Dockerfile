@@ -6,7 +6,7 @@ ARG CHANNEL
 
 ENV \
     NZBGET__BRANCH="${CHANNEL}" \
-    NZBGET__PORT="6789" \
+    NZBGET__PORT="6789"
 
 RUN	echo "**** install build packages ****" \
     && case "${TARGETPLATFORM}" in \
