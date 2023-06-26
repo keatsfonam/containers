@@ -45,7 +45,7 @@ RUN	echo "**** install build packages ****" \
     -e "s#^CertCheck=.*#CertCheck=yes#g" \
     -e "s#^DestDir=.*#DestDir=$\{MainDir\}/completed#g" \
     -e "s#^InterDir=.*#InterDir=$\{MainDir\}/intermediate#g" \
-    -e "s#^LogFile=.*#LogFile=/dev/stdout#g" \
+    -e "s#^LogFile=.*#LogFile=$\{MainDir\}/nzbget.log#g" \
     -e "s#^AuthorizedIP=.*#AuthorizedIP=127.0.0.1,10.*,192.168.*#g" \
     -e "s#^ControlPort=.*#ControlPort=${NZBGET__PORT}#g" \
 ${NZBGET__APP_DIR}/share/nzbget/nzbget.conf \
