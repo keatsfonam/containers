@@ -1,5 +1,5 @@
 
-FROM alpine:3.18.2 as builder
+FROM ghcr.io/onedr0p/alpine:3.18.2 as builder
 ARG TARGETPLATFORM
 ARG VERSION
 ARG CHANNEL
@@ -29,9 +29,9 @@ RUN	echo "**** install build packages ****" \
   curl \
 	&& echo "**** build nzbget ****" \
 	&& mkdir -p /app/nzbget \
-	&& git clone --branch ${NZBGET__BRANCH} https://github.com/nzbget-ng/nzbget.git nzbget \
-	&& cd nzbget \
-	&& make \
+	&& git clone --branch ${NZBGET__BRANCH} https://github.com/nzbget-ng/nzbget.git /nzbget \
+	&& cd /nzbget \
+	&& make -j \
 	&& make prefix=/app/nzbget install \
 	&& sed -i \
     -e "s#^MainDir=.*#MainDir=${NZBGET__MAIN_DIR}#g" \
@@ -44,7 +44,7 @@ RUN	echo "**** install build packages ****" \
     -e "s#^CertCheck=.*#CertCheck=yes#g" \
     -e "s#^DestDir=.*#DestDir=$\{MainDir\}/completed#g" \
     -e "s#^InterDir=.*#InterDir=$\{MainDir\}/intermediate#g" \
-    -e "s#^LogFile=.*#LogFile=$\{MainDir\}/nzbget.log#g" \
+    -e "s#^LogFile=.*#LogFile=/dev/stdout#g" \
     -e "s#^AuthorizedIP=.*#AuthorizedIP=127.0.0.1#g" \
     -e "s#^ControlPort=.*#ControlPort=${NZBGET__PORT}#g" \
 /app/nzbget/share/nzbget/nzbget.conf \
@@ -67,6 +67,8 @@ LABEL build_version="Linuxserver.io version:- ${VERSION} Build-date:- ${BUILD_DA
 LABEL maintainer="thelamer"
 RUN	echo "**** install packages ****" \
 	&& mkdir -p ${NZBGET__MAIN_DIR} \
+  && chown kah:kah ${NZBGET__MAIN_DIR} \
+  && chmod 755 ${NZBGET__MAIN_DIR} \
 	&& apk add --no-cache \
 	libxml2 \
 	libxslt \

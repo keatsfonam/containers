@@ -7,6 +7,6 @@ test -f "/scripts/vpn.sh" && source "/scripts/vpn.sh"
 #shellcheck disable=SC2086
 exec \
     /app/nzbget/bin/nzbget \
-        --daemon \
+        --server \
         --configfile /app/nzbget/share/nzbget/nzbget.conf \
         "$@"
