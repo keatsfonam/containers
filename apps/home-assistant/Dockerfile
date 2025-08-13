@@ -1,13 +1,11 @@
-FROM ghcr.io/onedr0p/alpine:rolling@sha256:4b666f73ee079b4feac9527fae3b0e60b0e9883213758bdb28af852c9acb4efe
+FROM docker.io/library/python:3.13.2-alpine
 
-# https://github.com/linuxserver/docker-homeassistant
-# https://github.com/home-assistant/docker
-# https://github.com/home-assistant/docker-base
-# https://github.com/pypa/pip/issues/10788
-
+ARG TARGETARCH
 ARG TARGETPLATFORM
 ARG VERSION
-ARG CHANNEL
+
+ENV UMASK="0002" \
+    TZ="Etc/UTC"
 
 ENV \
     PYTHONDONTWRITEBYTECODE=1 \
@@ -15,40 +13,53 @@ ENV \
     PIP_ROOT_USER_ACTION=ignore \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
-    ALPINE_WHEELS="https://wheel-index.linuxserver.io/alpine-3.18/" \
-    HOMEASSISTANT_WHEELS="https://wheel-index.linuxserver.io/homeassistant-3.18/" \
-    PYTHONPATH="${PYTHONPATH}:/pip-packages" \
-    HOME="/config"
+    PIP_BREAK_SYSTEM_PACKAGES=1 \
+    UV_SYSTEM_PYTHON=true \
+    UV_NO_CACHE=true \
+    CRYPTOGRAPHY_DONT_BUILD_RUST=1 \
+    HOMEASSISTANT_WHEELS="https://wheels.home-assistant.io/musllinux/" \
+    HOME="/config" \
+    VENV_FOLDER="/config/.venv"
 
-WORKDIR /tmp
+USER root
+WORKDIR /app
 
-#hadolint ignore=DL3018
+#hadolint ignore=DL3018,DL3013,DL3059,DL4006
 RUN \
     apk add --no-cache \
+        bash \
+        binutils \
         bluez \
         bluez-deprecated \
         bluez-libs \
         ca-certificates \
+        catatonit \
+        coreutils \
         cups-libs \
+        curl \
         eudev-libs \
         ffmpeg \
         git \
+        iputils \
+        jo \
+        jq \
         libcap \
-        libjpeg-turbo \
+        libjpeg-turbo-dev \
+        libpcap-dev \
         libstdc++ \
         libxslt \
         mariadb-connector-c \
         mariadb-connector-c-dev \
+        nano \
         openssh-client \
         openssl \
         postgresql-libs \
-        py3-pip \
-        python3 \
         socat \
-        tiff
-
-#hadolint ignore=DL3018,DL3013,DL3059
-RUN \
+        tiff \
+        trurl \
+        tzdata \
+        unzip \
+    && \
     apk add --no-cache --virtual=.build-deps \
         autoconf \
         build-base \
@@ -63,34 +74,12 @@ RUN \
         libxml2-dev \
         libxslt-dev \
         postgresql-dev \
-        python3-dev \
-        unixodbc-dev
-
-#hadolint ignore=DL3018,DL3013,DL3059
-RUN \
-    pip install --upgrade \
-        cython \
-        pip \
-        pyparsing \
-        setuptools \
-        wheel
-
-#hadolint ignore=DL3018,DL3013,DL3059,DL4006
-RUN \
+        unixodbc-dev \
+    && \
+    pip install uv \
+    && \
     curl -fsSL "https://github.com/home-assistant/core/archive/${VERSION}.tar.gz" \
         | tar xzf - -C /tmp --strip-components=1 \
-    && \
-    mkdir -p /pip-packages \
-    && \
-    pip install \
-        --upgrade \
-        --target /pip-packages \
-        distlib \
-    && \
-    NUMPY_VERSION=$(grep "numpy" requirements_all.txt) \
-    && \
-    pip install --find-links "${ALPINE_WHEELS}" --find-links "${HOMEASSISTANT_WHEELS}" \
-        "${NUMPY_VERSION}" \
     && \
     case "${TARGETPLATFORM}" in \
         'linux/amd64') \
@@ -103,28 +92,26 @@ RUN \
     && \
     HOME_ASSISTANT_BASE=$(curl -fsSL "https://raw.githubusercontent.com/home-assistant/core/${VERSION}/build.yaml" | grep "${ARCH}: " | cut -d ":" -f3) \
     && \
-    pip install --no-index --only-binary=:all: --find-links "${ALPINE_WHEELS}" --find-links "${HOMEASSISTANT_WHEELS}" \
+    uv pip install --only-binary=:all: --find-links "${HOMEASSISTANT_WHEELS}" \
         --requirement "https://raw.githubusercontent.com/home-assistant/docker/${HOME_ASSISTANT_BASE}/requirements.txt" \
     && \
-    pip install --find-links "${ALPINE_WHEELS}" --find-links "${HOMEASSISTANT_WHEELS}" \
-        --requirement requirements_all.txt \
+    uv pip install --only-binary=:all: --find-links "${HOMEASSISTANT_WHEELS}" \
+        --requirement /tmp/requirements_all.txt \
     && \
-    pip install --only-binary=:all: --find-links "${ALPINE_WHEELS}" --find-links "${HOMEASSISTANT_WHEELS}" \
+    uv pip install --only-binary=:all: --find-links "${HOMEASSISTANT_WHEELS}" \
         homeassistant=="${VERSION}" \
-    && \
-    pip install --find-links "${ALPINE_WHEELS}" --find-links "${HOMEASSISTANT_WHEELS}" \
-        pycups PySwitchbot \
-    && \
-    apk del --purge .build-deps \
-    && \
-    rm -rf \
-        /root/.cache \
-        /root/.cargo \
-        /tmp/*
+    && curl -L https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_${TARGETARCH} --output /bin/go2rtc \
+    && chmod +x /bin/go2rtc \
+    && mkdir -p /config && chown nobody:nogroup -R /config \
+    && apk del --purge .build-deps \
+    && rm -rf /root/.cache /root/.cargo /tmp/*
 
-WORKDIR /app
-USER kah
-COPY ./apps/home-assistant/entrypoint.sh /entrypoint.sh
-CMD ["/entrypoint.sh"]
+COPY ./entrypoint.sh /entrypoint.sh
+
+USER nobody:nogroup
+WORKDIR /config
+VOLUME ["/config"]
+
+ENTRYPOINT ["/usr/bin/catatonit", "--", "/entrypoint.sh"]
 
 LABEL org.opencontainers.image.source="https://github.com/home-assistant/core"

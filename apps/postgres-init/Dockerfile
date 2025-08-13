@@ -1,16 +1,23 @@
-FROM ghcr.io/onedr0p/alpine:rolling@sha256:4b666f73ee079b4feac9527fae3b0e60b0e9883213758bdb28af852c9acb4efe
+FROM docker.io/library/alpine:3.21
 
 ARG TARGETPLATFORM
 ARG VERSION
-ARG CHANNEL
+
+USER root
+WORKDIR /app
 
 #hadolint ignore=DL3018
-RUN apk add --no-cache ca-certificates postgresql14-client~"${VERSION}"
+RUN \
+    apk add --no-cache \
+        bash \
+        ca-certificates \
+        catatonit \
+        postgresql17-client="${VERSION}"
 
-USER kah
+COPY ./entrypoint.sh /entrypoint.sh
 
-COPY ./apps/postgres-init/entrypoint.sh /entrypoint.sh
+USER nobody:nogroup
 
-CMD ["/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/catatonit", "--", "/entrypoint.sh"]
 
 LABEL org.opencontainers.image.source="https://github.com/postgres/postgres"
